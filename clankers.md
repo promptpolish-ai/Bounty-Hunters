@@ -38,3 +38,4 @@ Automated tracking of all Clankers PR contributors.
 | tjmyou123 | 1 | 2026-05-13 |
 | daveinturkey15-byte | 1 | 2026-05-13 |
 | Saumya-Verma123 | 2 | 2026-05-13 |
+| lycaki | 1 | 2026-05-13 |
