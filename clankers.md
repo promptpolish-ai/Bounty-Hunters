@@ -26,3 +26,4 @@ Automated tracking of all Clankers PR contributors.
 | digzrow-coder | 1 | 2026-05-13 |
 | huthoinguyn | 1 | 2026-05-13 |
 | woairenzhi | 1 | 2026-05-13 |
+| nishantgoyal01 | 1 | 2026-05-13 |
