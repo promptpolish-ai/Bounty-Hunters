@@ -1,11 +1,11 @@
-name: Track Contributors
+name: Track Clankers
 
 on:
   pull_request_target:
     types: [opened]
 
 concurrency:
-  group: track-contributors
+  group: track-clankers
   cancel-in-progress: false
 
 permissions:
@@ -20,7 +20,7 @@ jobs:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update clankers.md with PR author
+      - name: Update clankers.md and clankers.json
         uses: actions/github-script@v7
         with:
           script: |
@@ -28,47 +28,81 @@ jobs:
             const { execSync } = require('child_process');
 
             const username = context.payload.pull_request.user.login;
-            const date = new Date().toISOString().split('T')[0];
-            const file = 'clankers.md';
+            const now = new Date().toISOString();
+            const mdFile = 'clankers.md';
+            const jsonFile = 'clankers.json';
 
             execSync('git pull --rebase origin main', { stdio: 'inherit' });
 
-            const content = fs.readFileSync(file, 'utf8');
-            const lines = content.split('\n');
+            // load existing data from JSON if exists, otherwise parse MD
+            let rows = [];
 
-            // parse existing rows
-            const rows = [];
-            for (const line of lines) {
-              const match = line.match(/^\|\s*(.+?)\s*\|\s*(\d+)\s*\|\s*([\d-]+)\s*\|$/);
-              if (match && match[1] !== 'Username') {
-                rows.push({ user: match[1], count: parseInt(match[2]), date: match[3] });
+            if (fs.existsSync(jsonFile)) {
+              rows = JSON.parse(fs.readFileSync(jsonFile, 'utf8'));
+            } else {
+              // bootstrap from MD
+              const content = fs.readFileSync(mdFile, 'utf8');
+              for (const line of content.split('\n')) {
+                const match = line.match(/^\|\s*(.+?)\s*\|\s*(\d+)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|$/);
+                if (match && match[1] !== 'Username') {
+                  rows.push({
+                    username: match[1].trim(),
+                    total_prs: parseInt(match[2]),
+                    first_pr: match[3].trim(),
+                    last_pr: match[4] ? match[4].trim() : match[3].trim()
+                  });
+                }
+              }
+
+              // fallback: old 3-column MD format
+              if (rows.length === 0) {
+                const content2 = fs.readFileSync(mdFile, 'utf8');
+                for (const line of content2.split('\n')) {
+                  const match = line.match(/^\|\s*(.+?)\s*\|\s*(\d+)\s*\|\s*([\d-]+)\s*\|$/);
+                  if (match && match[1] !== 'Username') {
+                    rows.push({
+                      username: match[1].trim(),
+                      total_prs: parseInt(match[2]),
+                      first_pr: match[3].trim() + 'T00:00:00.000Z',
+                      last_pr: match[3].trim() + 'T00:00:00.000Z'
+                    });
+                  }
+                }
               }
             }
 
             // update or add
-            const existing = rows.find(r => r.user === username);
+            const existing = rows.find(r => r.username === username);
             if (existing) {
-              existing.count += 1;
+              existing.total_prs += 1;
+              existing.last_pr = now;
             } else {
-              rows.push({ user: username, count: 1, date: date });
+              rows.push({
+                username: username,
+                total_prs: 1,
+                first_pr: now,
+                last_pr: now
+              });
             }
 
-            // sort by count descending
-            rows.sort((a, b) => b.count - a.count);
+            // sort by total_prs descending
+            rows.sort((a, b) => b.total_prs - a.total_prs);
 
-            // rebuild file
-            let output = '# Clankers\n\n';
-            output += 'Automated tracking of all Clankers PR contributors.\n\n';
-            output += '| Username | Total PRs | First PR |\n';
-            output += '|----------|-----------|----------|\n';
+            // write JSON
+            fs.writeFileSync(jsonFile, JSON.stringify(rows, null, 2) + '\n');
+
+            // write MD
+            let md = '# Clankers\n\n';
+            md += 'Automated tracking of all Clankers PR contributors.\n\n';
+            md += '| Username | Total PRs | First PR | Last PR |\n';
+            md += '|----------|-----------|----------|----------|\n';
             for (const row of rows) {
-              output += `| ${row.user} | ${row.count} | ${row.date} |\n`;
+              md += `| ${row.username} | ${row.total_prs} | ${row.first_pr} | ${row.last_pr} |\n`;
             }
-
-            fs.writeFileSync(file, output);
+            fs.writeFileSync(mdFile, md);
 
             // check if changed
-            const diff = execSync('git diff --quiet clankers.md || echo changed').toString().trim();
+            const diff = execSync('git diff --quiet clankers.md clankers.json || echo changed').toString().trim();
             if (diff !== 'changed') {
               console.log('No changes needed');
               return;
@@ -76,8 +110,8 @@ jobs:
 
             execSync('git config user.name "github-actions[bot]"');
             execSync('git config user.email "github-actions[bot]@users.noreply.github.com"');
-            execSync('git add clankers.md');
-            execSync(`git commit -m "clankers database: update ${username}"`);
+            execSync('git add clankers.md clankers.json');
+            execSync(`git commit -m "clankers database: update clanker stats for ${username}"`);
             execSync('git pull --rebase origin main', { stdio: 'inherit' });
             execSync('git push', { stdio: 'inherit' });
             console.log(`Updated ${username}`);
