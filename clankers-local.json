@@ -1242,6 +1242,12 @@
     "last_pr": "2026-06-02T15:12:30.435Z"
   },
   {
+    "username": "bryantrinh",
+    "total_prs": 2,
+    "first_pr": "2026-06-03T13:08:01.887Z",
+    "last_pr": "2026-06-03T13:20:27.683Z"
+  },
+  {
     "username": "ErenCankutUYSAL",
     "total_prs": 1,
     "first_pr": "2026-05-13T19:25:27Z",
@@ -1768,11 +1774,5 @@
     "total_prs": 1,
     "first_pr": "2026-06-02T17:37:50.610Z",
     "last_pr": "2026-06-02T17:37:50.610Z"
-  },
-  {
-    "username": "bryantrinh",
-    "total_prs": 1,
-    "first_pr": "2026-06-03T13:08:01.887Z",
-    "last_pr": "2026-06-03T13:08:01.887Z"
   }
 ]
